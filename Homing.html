@@ -207,18 +207,18 @@
             }
         }
         var missile_img = new Image();
-        missile_img.src = "missile.png";
+        missile_img.src = "images/missile.png";
         var missile_fast_img = new Image();
-        missile_fast_img.src = "missile_fast.png";
+        missile_fast_img.src = "images/missile_fast.png";
         var missile_straight_img = new Image();
-        missile_straight_img.src = "missile_straight.png";
+        missile_straight_img.src = "images/missile_straight.png";
         var missile_accelerate_img = new Image();
-        missile_accelerate_img.src = "missile_accelerate.png";
+        missile_accelerate_img.src = "images/missile_accelerate.png";
 
         //TANK
         function Tank(x) {
             this.img = new Image();
-            this.img.src = "tank.png";
+            this.img.src = "images/tank.png";
             this.x = x;
             this.y = canvas.height - 48;
         }
@@ -308,7 +308,7 @@
                 ctx.closePath();
                 if (timer % 2 == 0) {
                     var lightning = new Image();
-                    lightning.src = "lightning" + getRandomInt(4) + ".png";
+                    lightning.src = "images/lightning" + getRandomInt(4) + ".png";
                     ctx.save();
                     ctx.drawImage(lightning
                         , 0, 0
