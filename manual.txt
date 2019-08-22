@@ -1,0 +1,7 @@
+Use mouse to play.
+
+1. Click the screen to set initial position and start a game.
+2. Click the destination to move target.
+3. Get item by touching item.
+3-1. Item 'B' pushes missiles away from the target.
+3-2. Item 'S' makes missiles lose homing function.
