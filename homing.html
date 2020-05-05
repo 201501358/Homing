@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>CYCLOID</title>
+    <style>
+        #myCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: skyblue;
+        }
+
+        #myCanvas2 {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: rgba(255,255,255,0);
+        }
+
+        #ghostCanvas2 {
+            position: relative;
+            top: 0;
+            left: 0;
+            background-color: rgba(255,255,255,0);
+        }
+
+        .myInput {
+            float: right;
+            position: relative;
+
+            border:1px solid black;
+            padding:4px;
+        }
+            .myInput .rightAlign {
+                float:right;
+            }
+
+        .inputLine {
+            content: box;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="600" height="480" onclick="mouse.update(ctx,event);"></canvas>
+    <canvas id="ghostCanvas" width="600" height="480"></canvas>
+
+    <div class="myInput">
+        <div class="inputLine">
+            <input type="button" value="Clear" onclick="ctx2.clearRect(0, 0, canvas2.width, canvas2.height);" />
+            <input type="button" value="Pause" onclick="status_pause ^= true;" />
+        </div><br />
+        <div class="inputLine">
+            Main Circle Radius:
+            <input type="number" value="64" class="rightAlign" id="MCR" />
+        </div><br />
+        <div class="inputLine">
+            Sub Circle Radius:
+            <input type="number" value="64" class="rightAlign" id="SCR" />
+        </div>
+
+    </div>
+
+    <script src="objects.js"></script>
+    <script src="mouse_handler.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

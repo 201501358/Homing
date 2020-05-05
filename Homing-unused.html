@@ -1,0 +1,556 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Missile Dodge Game</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            background-color: lightskyblue;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="600" height="480" onclick="target.find(event)"></canvas>
+    <div id="score"></div>
+    <script>
+        var DEBUG = false;
+
+        //open canvas
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
+        //functions
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * Math.floor(max));
+        }
+        function drawLine(x1, y1, x2, y2, thickness, color) {
+            var degree;
+            if (x1 < x2) {
+                degree = Math.atan((y2 - y1) / (x2 - x1));
+            }
+            else if (x1 > x2) {
+                degree = Math.PI + Math.atan((y2 - y1) / (x2 - x1));
+            }
+            else {
+                if (y1 < y2)
+                    degree = 90;
+                else if (y1 > y2)
+                    degree = 270;
+                else
+                    degree = 0;//p1==p2
+            }
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.translate(x1, y1);
+            ctx.rotate(degree);
+            ctx.rect(0, 0, Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)), thickness / 2);
+            ctx.rect(0, 0, Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)), -thickness / 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.closePath();
+            ctx.restore();
+        }
+        function drawEllipseByCenter(ctx, cx, cy, w, h) {
+            drawEllipse(ctx, cx - w / 2.0, cy - h / 2.0, w, h);
+        }
+        function drawEllipse(ctx, x, y, w, h) {
+            var kappa = .5522848,
+                ox = (w / 2) * kappa, // control point offset horizontal
+                oy = (h / 2) * kappa, // control point offset vertical
+                xe = x + w,           // x-end
+                ye = y + h,           // y-end
+                xm = x + w / 2,       // x-middle
+                ym = y + h / 2;       // y-middle
+
+            ctx.beginPath();
+            ctx.moveTo(x, ym);
+            ctx.bezierCurveTo(x, ym - oy, xm - ox, y, xm, y);
+            ctx.bezierCurveTo(xm + ox, y, xe, ym - oy, xe, ym);
+            ctx.bezierCurveTo(xe, ym + oy, xm + ox, ye, xm, ye);
+            ctx.bezierCurveTo(xm - ox, ye, x, ym + oy, x, ym);
+            //ctx.closePath(); // not used correctly, see comments (use to close off open path)
+            ctx.stroke();
+        }
+
+        //Target object must be the only one
+        var target = {};
+        target.x = canvas.width / 2;
+        target.y = canvas.height / 2;
+        target.move_x = target.x;
+        target.move_y = target.y;
+        target.degree = 0;
+        target.radius = 10;
+        target.speed = 6;
+        target.find = function (event) {
+            if (started == false) {
+                if (event.offsetX > canvas.width - 50 && event.offsetY > canvas.height - 50) DEBUG = true;
+                started = true;
+                this.x = event.offsetX;
+                this.y = event.offsetY;
+
+            }
+            t = true;
+            var x = event.offsetX;
+            var y = event.offsetY;
+            target.move_x = x;
+            target.move_y = y;
+        }
+        target.move = function () {
+            if (!(this.move_x == this.x && this.move_y == this.y)) {
+                if (this.move_x == this.x) {
+                    if (this.move_y < this.y) this.degree = 270;
+                    else this.degree = 90;
+                }
+                else {
+                    if (this.x < this.move_x)
+                        this.degree = Math.atan((this.move_y - this.y) / (this.move_x - this.x)) * 180 / Math.PI;
+                    else
+                        this.degree = Math.atan((this.move_y - this.y) / (this.move_x - this.x)) * 180 / Math.PI - 180;
+                }
+                this.degree %= 360;
+                if (this.degree < 0) this.degree += 360;
+            }
+            this.x += this.speed * Math.cos((this.degree) * Math.PI / 180);
+            this.y += this.speed * Math.sin((this.degree) * Math.PI / 180);
+            if (Math.abs((this.x - this.move_x) / this.speed) < 1.1 && Math.abs((this.y - this.move_y) / this.speed) < 1.1) {
+                this.x = this.move_x;
+                this.y = this.move_y;
+            }
+        }
+        target.draw = function () {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, 3.14 * 2);
+            ctx.fillStyle = "coral";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        //Missile objects can be added 2 or more
+        function Missile(x, y, speed, degree, exist) {
+            this.x = x;
+            this.y = y;
+            this.exist = exist;
+            if (0 <= speed && speed < 3) {
+                this.img = missile_accelerate_img;
+                this.speed = 0.1;
+                if (target.x > this.x)
+                    this.degree = Math.atan((target.y - this.y) / (target.x - this.x)) * 180 / Math.PI;
+                else
+                    this.degree = Math.atan((target.y - this.y) / (target.x - this.x)) * 180 / Math.PI - 180;
+                this.RoG = 4;
+            }
+            else if (3 <= speed && speed < 6) {
+                this.img = missile_img;
+                this.speed = speed;
+                this.degree = degree;
+            }
+            else if (6 <= speed && speed < 8) {
+                this.img = missile_fast_img;
+                this.speed = speed + 1;
+                this.degree = degree;
+            }
+            else {
+                this.img = missile_straight_img;
+                this.speed = speed + 4;
+                if (target.x > this.x)
+                    this.degree = Math.atan((target.y - this.y) / (target.x - this.x)) * 180 / Math.PI;
+                else
+                    this.degree = Math.atan((target.y - this.y) / (target.x - this.x)) * 180 / Math.PI - 180;
+                this.RoG = 0;
+            }
+        }
+        Missile.prototype.fire_color = ["red", "orange", "darkorange", "gold"];
+        Missile.prototype.RoG = 2;//Round of Gyration
+        Missile.prototype.homing = function (t) {
+            if (this.exist == true) {
+                //standardizate degree
+                this.degree %= 360;
+                if (this.degree < 0) this.degree += 360;
+                //set aimed degree.
+                var tmp_degree = Math.atan((t.y - this.y) / (t.x - this.x)) * 180 / Math.PI;
+                //if missile is going to lft side
+                if (t.x < this.x) tmp_degree -= 180;
+                //standardizate degree
+                tmp_degree %= 360;
+                if (tmp_degree < 0) tmp_degree += 360;
+
+                //if missile is looking at right side
+                if (0 <= tmp_degree && tmp_degree < 45 || 315 <= tmp_degree && tmp_degree < 360) {
+                    if (!(90 <= Math.abs(tmp_degree - this.degree) && Math.abs(tmp_degree - this.degree) < 270)) {
+                        var tmp_gradient = Math.tan((tmp_degree) * Math.PI / 180);
+                        var m_gradient = Math.tan((this.degree) * Math.PI / 180);
+                        if (Math.abs(tmp_degree - this.degree) < this.RoG) this.degree = tmp_degree;
+                        else if (tmp_gradient - m_gradient > 0) this.degree += this.RoG;
+                        else if (tmp_gradient - m_gradient < 0) this.degree -= this.RoG;
+                    }
+                }
+                else {
+                    if (Math.abs(tmp_degree - this.degree) < 90) {
+                        if (Math.abs(tmp_degree - this.degree) < this.RoG) this.degree = tmp_degree;
+                        else if (tmp_degree - this.degree > 0) this.degree += this.RoG;
+                        else if (tmp_degree - this.degree < 0) this.degree -= this.RoG;
+                    }
+                }
+            }
+            //standardization final
+            this.degree %= 360;
+            if (this.degree < 0) this.degree += 360;
+        }
+        Missile.prototype.parish = function () {
+            if (!(-40 < this.x && this.x < canvas.width + 40 && -40 < this.y && this.y < canvas.height + 40)) {
+                this.exist = false;
+                missile_dodged += 1;
+            }
+        }
+        Missile.prototype.move = function () {
+            if (this.exist == true) {
+                this.x += this.speed * Math.cos((this.degree) * Math.PI / 180);
+                this.y += this.speed * Math.sin((this.degree) * Math.PI / 180);
+                //if missile_accelerate
+                if (this.img == missile_accelerate_img) {
+                    this.speed += this.speed / 5 + 0.04;
+                    while (this.RoG > 0) this.RoG -= 0.4;
+                }
+                //check if it is too far
+                this.parish();
+            }
+        }
+        Missile.prototype.draw = function () {
+            if (this.exist == true) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate((this.degree + 135) * (Math.PI / 180));
+                ctx.beginPath();
+                ctx.rotate(45 * (Math.PI / 180));
+                drawEllipseByCenter(ctx, 64 + getRandomInt(12), 0, 40, 20)
+                ctx.fillStyle = this.fire_color[getRandomInt(this.fire_color.length)];
+                ctx.fill();
+                ctx.closePath();
+                ctx.rotate(-45 * (Math.PI / 180));
+                ctx.drawImage(this.img, 0, 0);
+                ctx.restore();
+            }
+        }
+        var missile_img = new Image();
+        missile_img.src = "images/missile.png";
+        var missile_fast_img = new Image();
+        missile_fast_img.src = "images/missile_fast.png";
+        var missile_straight_img = new Image();
+        missile_straight_img.src = "images/missile_straight.png";
+        var missile_accelerate_img = new Image();
+        missile_accelerate_img.src = "images/missile_accelerate.png";
+
+        //TANK-disabled
+        /*
+        function Tank(x) {
+            this.img = new Image();
+            this.img.src = "images/tank.png";
+            this.x = x;
+            this.y = canvas.height - 48;
+            this.offset_x = x + 54;
+            this.offset_y = canvas.height - 48 + 24;
+            this.aim_x = 0;
+            this.aim_y = 0;
+            this.degree_rad;
+        }
+        Tank.prototype.draw = function () {
+            ctx.beginPath();
+            ctx.arc(this.offset_x, this.offset_y, 20, 0, Math.PI, true);
+            ctx.fillStyle = "olive";
+            ctx.fill();
+            ctx.closePath();
+            ctx.drawImage(this.img, 0, 0, this.img.naturalWidth, this.img.naturalHeight, this.x, this.y, this.img.naturalWidth, this.img.naturalHeight);
+        }
+        Tank.prototype.aim = function () {
+            this.aim_x = target.move_x;
+            this.aim_y = target.move_y;
+            if (this.aim.x >= this.offset_x) this.degree_rad = Math.atan((this.aim_y - this.offset_y) / (this.aim_x - this.offset_x));
+            else this.degree_rad = Math.atan((this.aim_y - this.offset_y) / (this.aim_x - this.offset_x)) + Math.PI;
+        }
+        Tank.prototype.attack = function () {
+            drawLine(this.offset_x, this.offset_y, this.aim_x, this.aim_y, 4, "rgba(" + 255 * (((timer) % 3) % 2) + "," + 255 * (((timer + 1) % 3) % 2) + "," + 255 * (((timer + 2) % 3) % 2) + ",0.875)");
+            //1. along the line above, set spots to capture
+            var attack_spot = []
+            var spot_x = this.offset_x;
+            var spot_y = this.offset_y;
+            while (0 <= spot_x && spot_x < canvas.width && 0 <= spot_y && spot_y < canvas.height) {
+                spot_x += 50 * Math.cos(this.degree_rad);
+                spot_y += 50 * Math.sin(this.degree_rad);
+                attack_spot.push({ x: spot_x, y: spot_y, captured: false });
+            }
+            //2. For each spot, check if the spot captured a missile by checking the image data of the spot
+            for (var i = 0; i < attack_spot.length; i++) {
+                if (ctx.getImageData(Math.floor(attack_spot[i].x), Math.floor(attack_spot[i].y), 1, 1).data[3] = 255) {
+                    attack_spot[i].captured = true;
+                }  
+            }
+            //3. for the spots which have captured, check every missiles if the missile is captured by that spot
+            for (var i = 0; i < attack_spot.length; i++) {
+                if (attack_spot[i].captured == true) {
+                    for (var j = 0; j < missile_list.length; j++) {
+                        var m = missile_list[j];
+                        var spot = { x: attack_spot[i].x, y: attack_spot[i].y };//copy object
+                        ctx.save();
+                        ctx.translate(m.x, m.y);
+                        spot.x -= m.x, spot.y -= m.y;
+                        ctx.rotate(m.degree * Math.PI / 180);
+                        spot.x -= m.x * Math.cos(m.degree * Math.PI / 180), spot.y -= m.y * Math.sin(m.degree * Math.PI / 180);
+                        //4. If the missile is captured, send the missile to -100,-100 to make that parish
+                        if (0 <= spot.x && spot.x < m.img.naturalWidth && 0 <= spot.y && spot.y < m.img.naturalHeight) {
+                            missile_list[j].x = -100, missile_list[j].y = -100;
+                        }
+                        ctx.restore();
+                    }   
+                }    
+            }
+            for (var i = 0; i < attack_spot.length; i++) {
+                var color = attack_spot[i].captured ? "rgba(255,255,0,0.875)" : "rgba(0,0,0,0.875)"
+                ctx.beginPath();
+                ctx.arc(attack_spot[i].x, attack_spot[i].y, 4, 0, 6.28, false);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+        */
+        //ITEM
+        function Item(x, y, num, duration) {
+            this.x = x;
+            this.y = y;
+            this.num = num;
+            this.color = this.color_list[num];
+            this.letter = this.letter_list[num];
+            this.radius = 10;
+            this.duration = duration;
+        }
+        Item.prototype.color_list = ["silver", "white", "black"];
+        Item.prototype.letter_list = ["B", "S", "T"];
+        Item.prototype.collision = function (t) {
+            var offset_x = t.x - this.x;
+            var offset_y = t.y - this.y;
+            //ctx.beginPath();
+            //    ctx.textAligh = "center";
+            //    ctx.fillText(offset_x+"/"+offset_y+"/"+Math.sqrt(offset_x * offset_x + offset_y * offset_y), canvas.width / 2, 50);
+            //    ctx.closePath();
+            if (Math.sqrt(offset_x * offset_x + offset_y * offset_y) < t.radius + this.radius) {
+                Item_effect[this.num] = 120;
+                this.duration = 0;
+            }
+        }
+        Item.prototype.draw = function () {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            ctx.closePath();
+            ctx.beginPath();
+            ctx.textAlign = "center";
+            ctx.fillStyle = this.color_list[(this.num + 1) % this.color_list.length];
+            ctx.fillText(this.letter, this.x, this.y + 7);
+            ctx.closePath();
+        }
+        var Item_effect = [0, 0, 0];
+        function ItemEffect0(t) {
+            if (0 < Item_effect[0]) {
+                Item_effect[0] -= 1;
+
+                //visual effect
+                ctx.beginPath();
+                ctx.textAligh = "center";
+                ctx.fillText("I T E M : 0", canvas.width / 2, 50);
+                ctx.closePath();
+
+                ctx.beginPath();
+                ctx.arc(target.x, target.y, 5 * timer, 0, 2 * Math.PI, false)
+                ctx.fillStyle = "rgba(" + 255 * getRandomInt(2) + "," + 255 * getRandomInt(2) + "," + 255 * getRandomInt(2) + "," + ((25 - timer) / 50.0) + ")";
+                ctx.fill();
+                ctx.closePath();
+
+
+
+                //effct
+                for (var i = 0; i < missile_list.length; i++) {
+                    var tmp_degree = Math.atan((t.y - missile_list[i].y) / (t.x - missile_list[i].x)) * 180 / Math.PI;
+                    if (t.x < missile_list[i].x) tmp_degree -= 180;
+                    missile_list[i].x += 2 * Math.cos((tmp_degree + 180) * Math.PI / 180);
+                    missile_list[i].y += 2 * Math.sin((tmp_degree + 180) * Math.PI / 180);
+                }
+            }
+        }
+        function ItemEffect1(t) {
+            if (0 < Item_effect[1]) {
+                Item_effect[1] -= 1;
+
+                //visual effect
+                ctx.beginPath();
+                ctx.textAligh = "center";
+                ctx.fillText("I T E M : 1", canvas.width / 2, 60);
+                ctx.closePath();
+                if (timer % 2 == 0) {
+                    var lightning = new Image();
+                    lightning.src = "images/lightning" + getRandomInt(4) + ".png";
+                    ctx.save();
+                    ctx.drawImage(lightning
+                        , 0, 0
+                        , lightning.naturalWidth, lightning.naturalHeight
+                        , target.x + Math.cos(2 * Math.PI * (timer / 25.0)) * 50 - lightning.naturalWidth / 2, target.y + Math.sin(2 * Math.PI * (timer / 25.0)) * 50 - lightning.naturalHeight / 2
+                        , lightning.naturalWidth, lightning.naturalHeight);
+                    ctx.drawImage(lightning
+                        , 0, 0
+                        , lightning.naturalWidth, lightning.naturalHeight
+                        , target.x - Math.cos(2 * Math.PI * (timer / 25.0)) * 50 - lightning.naturalWidth / 2, target.y - Math.sin(2 * Math.PI * (timer / 25.0)) * 50 - lightning.naturalHeight / 2
+                        , lightning.naturalWidth, lightning.naturalHeight);
+                    ctx.restore();
+                }
+
+
+                //effect
+                for (var i = 0; i < missile_list.length; i++) {
+                    if (10 <= missile_list[i].x && missile_list[i].x < canvas.width - 10 && 10 <= missile_list[i].y && missile_list[i].y < canvas.height - 10) {
+                        missile_list[i].RoG = 0;
+                    }
+                    if (missile_list[i].img == missile_straight_img || missile_list[i].img == missile_accelerate_img)
+                        if (0.4 < missile_list[i].speed)
+                            missile_list[i].speed -= 0.1;
+                }
+            }
+        }
+
+        //GAMEMOVER
+        var over = false;
+        var final_score = 0;
+        var final_missile_dodged = 0;
+        function gameover(t, m) {
+            if (over == false) {
+                if (Math.abs(m.x - t.x) < t.radius && Math.abs(m.y - t.y) < t.radius) {
+                    over = true;
+                    final_score = second;
+                    final_missile_dodged = missile_dodged;
+                }
+            }
+            else {
+                ctx.beginPath();
+                var offset = 0;
+                var offset_increase = 20;
+                ctx.textAlign = "center";
+                ctx.fillStyle = "black";
+                ctx.fillText("Game Over\n", canvas.width / 2, canvas.height / 2 + offset);
+                offset += offset_increase;
+                ctx.fillText("", canvas.width / 2, canvas.height / 2 + offset);
+                offset += offset_increase;
+                ctx.fillText("Score : " + final_score + "\n", canvas.width / 2, canvas.height / 2 + offset);
+                offset += offset_increase;
+                ctx.fillText("Missile dodged : " + final_missile_dodged + "\n", canvas.width / 2, canvas.height / 2 + offset);
+                offset += offset_increase;
+                ctx.closePath();
+                //window.location.reload();
+            }
+        }
+
+        //missile source
+        var missile_list = [new Missile(0, 0, 0, 0, false), new Missile(0, 0, 0, 0, false), new Missile(0, 0, 0, 0, false)];
+        missile_list.manage = function () {
+            var tmp_speed = getRandomInt(8) + 2;//decide speed when missile is created
+            for (var i = 0; i < this.length; i++) {
+                if (missile_list[i].exist == false) {
+                    switch (getRandomInt(4)) {
+                        case 0:
+                            missile_list[i] = new Missile(0, getRandomInt(canvas.height), tmp_speed, 1, true); break;
+                        case 1:
+                            missile_list[i] = new Missile(getRandomInt(canvas.width), 0, tmp_speed, 91, true); break;
+                        case 2:
+                            missile_list[i] = new Missile(canvas.width, getRandomInt(canvas.height), tmp_speed, 181, true); break;
+                        case 3:
+                            missile_list[i] = new Missile(getRandomInt(canvas.width), canvas.height, tmp_speed, 271, true); break;
+                    }
+                }
+            }
+        }
+
+        //item source
+        var item_list = [new Item(400, 400, 0, 0), new Item(20, 20, 1, 0)];
+        //MAIN DRAW FUNCTION + scores
+        var started = false;
+        var timer = 0;
+        var second = 0;
+        var missile_dodged = 0;
+        function draw() {
+            if (started == true) {
+                //Clear Window=================================================
+                ctx.clearRect(0, 0, canvas.width, canvas.height);//Clear Window
+
+                //Missile & Target Management===================================
+                for (var i = 0; i < missile_list.length; i++) {
+                    missile_list[i].move();
+                    missile_list[i].draw();
+                }
+                target.draw();
+                if (over == false)
+                    target.move();
+                for (var i = 0; i < missile_list.length; i++) {
+                    missile_list[i].homing(target);
+                }
+                missile_list.manage();//====================Missile & Target Management
+
+                //Item Management=======================================
+                for (var i = 0; i < item_list.length; i++) {
+                    if (item_list[i].duration > 0) {
+                        item_list[i].duration -= 1;
+                        item_list[i].draw();
+                        item_list[i].collision(target);
+                    }
+                }
+                ItemEffect0(target);
+                ItemEffect1(target);
+
+                //=======================================Item Management
+
+                //time managent=========================================
+                timer += 1;
+                ctx.beginPath();
+                ctx.font = "20px Georgia";
+                ctx.fillStyle = "black";
+                ctx.fillText(" " + second, 10, 50);
+                ctx.closePath();
+                if (timer >= 25) {
+                    timer %= 25;
+                    if (over == false)
+                        second += 1;
+                    /*DEBUG************/
+                    if (DEBUG == true) {
+
+                    }
+                    /*************DEBUG*/
+                    else {
+                        if (second % 10 == 0) {
+                            missile_list[missile_list.length] = new Missile(0, 0, 0, 0, false);
+                        }
+                        if (second % 17 == 0) {//item frequency
+                            var itemnum = getRandomInt(2);
+                            item_list[itemnum] = new Item(getRandomInt(canvas.width - 20) + 10, getRandomInt(canvas.height - 20) + 10, itemnum, 96);
+                        }
+                    }
+                }//======================================time management
+
+                //Judge Gameover =======================================
+                for (var i = 0; i < missile_list.length; i++) {
+                    gameover(target, missile_list[i]);
+                }//========================================Judge Gameover
+
+                //research & others
+            }
+            else {
+                ctx.beginPath();
+                ctx.font = "20px Georgia";
+                ctx.fillStyle = "gray";
+                ctx.fillText("CLICK TO START", canvas.width / 2 - 70, canvas.height / 2);
+                ctx.closePath();
+            }
+        }
+
+        setInterval(draw, 40);
+    </script>
+</body>
+</html>
