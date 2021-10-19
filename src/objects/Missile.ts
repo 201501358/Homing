@@ -67,7 +67,6 @@ class Missile extends Hittable {
 			ctx.translate(this.coor.x, this.coor.y);
 			ctx.rotate(rad(this.dir + 180));
 			ctx.beginPath();
-			//ctx.rotate(rad(this.dir + 180));
 			drawEllipseByCenter(64 + randint(0, 12), 0, 40, 20)
 			ctx.fillStyle = Missile.fireColor[randint(0, Missile.fireColor.length)];
 			ctx.fill();
@@ -75,9 +74,9 @@ class Missile extends Hittable {
 			ctx.rotate(rad(-45));
 			ctx.drawImage(this.img, 0, 0);
 			ctx.restore();
-			for (var hbox of this.hitbox) {
-				hbox.draw();
-			}
+			// for (var hbox of this.hitbox) {
+			// 	hbox.draw();
+			// }
 		}
 	}
 }
