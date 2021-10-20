@@ -90,10 +90,10 @@ class ItemEffect1 extends ItemEffect{
 	affect(){
 		missileList.affect((i) => {
 			if (10 <= i.coor.x && i.coor.x < canvas.width - 10 && 10 <= i.coor.y && i.coor.y < canvas.height - 10) {
-				i.RoG = 0;
+				i.setRoG(0);
 			}
 			if (i.getModelNum() === 2 || i.getModelNum() === 3) {
-				if (0.4 < i.speed) i.speed -= 0.1;
+				if (0.4 < i.getSpeed()) i.setSpeed(i.getSpeed()-0.1)
 			}
 		})
 	}

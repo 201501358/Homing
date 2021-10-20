@@ -7,9 +7,9 @@ import { target } from './Target.js'
 class Missile extends Hittable {
 	static fireColor: string[] = ["red", "orange", "darkorange", "gold"]
 
-	public exist: boolean
-	public RoG: number = 2
-	public tar: any
+	private exist: boolean
+	private RoG: number = 2
+	protected tar: Hittable
 	constructor(x: number, y: number, speed: number, dir: number, tar: Hittable, exist: boolean) {
 		super(x, y, speed, dir);
 		this.exist = exist;
@@ -20,6 +20,8 @@ class Missile extends Hittable {
 		this.setHitbox(0, 0, 14, this, -25, 0);
 		this.setHitbox(0, 0, 4, this, -4, 0);
 	}
+	setRoG(val: number) { this.RoG = val }
+	isExist() { return this.exist }
 	getModelNum() { return 0 }
 	homing() {
 		var dest_degree = deg(Math.atan2(this.tar.coor.y - this.coor.y, this.tar.coor.x - this.coor.x));
@@ -124,10 +126,10 @@ class MissileList {
 				this.addMissile()
 			}
 		})
-	}	
+	}
 	init() {
 		this.list = []
-		this.missile_dodged=0
+		this.missile_dodged = 0
 		for (let i = 0; i < 3; i++) {
 			this.addMissile()
 		}
@@ -185,7 +187,7 @@ class MissileList {
 	manage() {
 		//parish된 미사일을 새로운 것으로 교체
 		for (var i = 0; i < this.list.length; i++) {
-			if (this.list[i].exist == false) {
+			if (this.list[i].isExist() == false) {
 				this.missile_dodged += 1
 				this.list[i] = this.createMissile()
 			}

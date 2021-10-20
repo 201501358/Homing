@@ -3,8 +3,8 @@ import { mouse } from "../system/Mouse.js";
 import { Coor, Hittable } from "./Objects.js";
 
 class Target extends Hittable {
-	public dest:Coor
-	public r:number
+	private dest:Coor
+	private r:number
 	constructor(x = canvas.width / 2, y = canvas.height / 2, speed = 6, dir = 0, r = 10) {
 		super(x, y, speed, dir);
 		this.dest = new Coor(x, y);
@@ -39,7 +39,7 @@ class Target extends Hittable {
 		ctx.fillStyle = 'coral';
 		ctx.fill();
 		ctx.closePath();
-		for (var hbox of this.hitbox) {
+		for (var hbox of this.getHitbox()) {
 			hbox.draw();
 		}
 	}

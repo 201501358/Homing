@@ -8,26 +8,26 @@ class Coor {
 }
 //hitbox
 class Hitbox {
-	public master: Hittable
-	public coor_relative: Coor
-	public coor: Coor
-	public r: number
-	constructor(x: number, y: number, r: number, master: Hittable, relX:number=0, relY:number=0) {
+	private master: Hittable
+	private coor_relative: Coor
+	private coor: Coor
+	private r: number
+	constructor(x: number, y: number, r: number, master: Hittable, relX: number = 0, relY: number = 0) {
 		this.master = master
 		this.coor_relative = new Coor(relX, relY)
 		this.coor = new Coor(master.coor.x + x, master.coor.y + y)
 		this.r = r
 	}
-	setRelativeCoor(relX:number=0, relY:number=0){
+	setRelativeCoor(relX: number = 0, relY: number = 0) {
 		this.coor_relative = new Coor(relX, relY)
 		this.coor = new Coor(this.master.coor.x + this.coor.x, this.master.coor.y + this.coor.y)
 	}
 	update() {
-		var h = distCoor2Coor(this.coor_relative, new Coor(0,0))
-		this.coor.x = this.master.coor.x + -h * Math.cos(rad(this.master.dir))
-		this.coor.y = this.master.coor.y + -h * Math.sin(rad(this.master.dir))
+		var h = distCoor2Coor(this.coor_relative, new Coor(0, 0))
+		this.coor.x = this.master.coor.x + -h * Math.cos(rad(this.master.getDir()))
+		this.coor.y = this.master.coor.y + -h * Math.sin(rad(this.master.getDir()))
 	}
-	isHitWith(h:Hitbox) {
+	isHitWith(h: Hitbox) {
 		if (h.r + this.r > Math.abs(this.coor.x - h.coor.x) && h.r + this.r > Math.abs(this.coor.y - h.coor.y)) {
 			if (h.r + this.r > distCoor2Coor(h.coor, this.coor)) {
 				return true
@@ -52,23 +52,26 @@ class Hitbox {
 //objects class
 class Objects {
 	public coor: Coor
-	constructor(x:number, y:number) {
+	constructor(x: number, y: number) {
 		this.coor = new Coor(x, y);
 	}
 }
 
 //movable
 class Movable extends Objects {
-	public speed: number
-	public dir: number
-	public img: HTMLImageElement
-	constructor(x:number, y:number, speed:number, dir:number) {
+	protected speed: number
+	protected dir: number
+	protected img: HTMLImageElement
+	constructor(x: number, y: number, speed: number, dir: number) {
 		super(x, y);
 		this.speed = speed;
 		this.dir = dir;
 		this.img = new Image();
 		this.img.src = "images/default_image.png";
 	}
+	setSpeed(val:number){this.speed=val}
+	getSpeed() { return this.speed }
+	getDir() { return this.dir }
 	move() {
 		if (this.speed > 100) this.speed = 100;
 
@@ -78,7 +81,7 @@ class Movable extends Objects {
 		this.coor.x = (this.coor.x + canvas.width) % canvas.width;
 		this.coor.y = (this.coor.y + canvas.height) % canvas.height;
 	}
-	moveTo(dest:Coor) {
+	moveTo(dest: Coor) {
 		this.coor.x = dest.x;
 		this.coor.y = dest.y;
 	}
@@ -95,17 +98,16 @@ class Movable extends Objects {
 
 //hittable
 class Hittable extends Movable {
-	public hitbox:Hitbox[]
-	public hitby:Hitbox[]
-	constructor(x:number, y:number, speed:number, dir:number) {
+	private hitbox: Hitbox[]
+	constructor(x: number, y: number, speed: number, dir: number) {
 		super(x, y, speed, dir);
 		this.hitbox = [];
-		this.hitby = [];
 	}
-	isHitWith(other:Hittable){
-		for(let j of this.hitbox){
-			for(let k of other.hitbox){
-				if(j.isHitWith(k)){
+	getHitbox(){return this.hitbox}
+	isHitWith(other: Hittable) {
+		for (let j of this.hitbox) {
+			for (let k of other.hitbox) {
+				if (j.isHitWith(k)) {
 					return true
 				}
 			}
@@ -117,7 +119,7 @@ class Hittable extends Movable {
 			hbox.update();
 		}
 	}
-	setHitbox(x:number, y:number, r:number, master:Hittable, relX:number=0, relY:number=0) {
+	setHitbox(x: number, y: number, r: number, master: Hittable, relX: number = 0, relY: number = 0) {
 		this.hitbox[this.hitbox.length] = new Hitbox(x, y, r, master, relX, relY);
 	}
 	drawHitbox() {
@@ -129,10 +131,10 @@ class Hittable extends Movable {
 
 //pen class
 class Pen extends Objects {
-	public r: number
-	public color: string
-	public is_down: boolean
-	constructor(x:number, y:number, r:number, color:string) {
+	private r: number
+	private color: string
+	private is_down: boolean
+	constructor(x: number, y: number, r: number, color: string) {
 		super(x, y);
 		this.r = r;
 		this.color = color;

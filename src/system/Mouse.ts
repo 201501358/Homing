@@ -1,10 +1,10 @@
 import {Coor} from '../objects/Objects.js'
 
 class Mouse {
-	public coor:Coor
-	public down:boolean
-	public ch:any
-	public selected:any
+	private coor:Coor
+	private down:boolean
+	private ch:any
+	private selected:any
     constructor() {
         this.coor = new Coor(0, 0);
         this.down = false;
