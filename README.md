@@ -5,7 +5,7 @@
 	npm install 
 	npm run build
 	npm start
-	[https://localhost:3000](https://localhost:3000)
+	http://localhost:3000
 
 ## How To Play
 	Use mouse to play.
